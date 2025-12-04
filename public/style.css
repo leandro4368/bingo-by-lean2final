@@ -153,3 +153,34 @@ main { display:flex; gap:12px; }
 .assign-menu button:hover {
   opacity: 0.8;
 }
+
+/* CARTÓN ARGENTINO REAL */
+.card-wrap {
+  background: url("/img/paper.jpg");
+  border: 2px solid #111;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+.bingo-table {
+  border: 2px solid black;
+}
+
+.bingo-table th {
+  background: #d32f2f;
+  color: white;
+  font-weight: bold;
+}
+
+.bingo-table td {
+  background: #fff;
+  font-size: 20px;
+  color: #111;
+}
+
+.bingo-table td.marked {
+  background: #34c759!important;
+  color: black;
+  font-weight: bold;
+}
+
