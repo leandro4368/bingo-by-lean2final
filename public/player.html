@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Bingo Casino — Jugador</title>
+  <link rel="stylesheet" href="/style.css" />
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="casino-bg">
+  <div class="player-area">
+    <header><h1>Bingo Casino — Jugador</h1></header>
+
+    <div id="waiting" class="box">
+      <h2 id="waitingText">Esperando que el admin te designe cartones...</h2>
+      <p id="statusEmail"></p>
+    </div>
+
+    <div id="cardsContainer" class="box hidden">
+      <h2>Tus cartones</h2>
+      <div id="cardsGrid" class="cards-grid"></div>
+      <div class="player-controls">
+        <button id="btnClaim">Cantar BINGO</button>
+      </div>
+    </div>
+
+    <audio id="bgMusic" src="/audio/casino-loop.mp3" loop></audio>
+  </div>
+
+  <script>
+    const socket = io();
+    let email = sessionStorage.getItem('email') || prompt('Ingresá tu correo').toLowerCase();
+    if (!email) email = prompt('Ingresá tu correo').toLowerCase();
+    sessionStorage.setItem('email', email);
+    document.getElementById('statusEmail').textContent = email;
+
+    // identify with server (map socket)
+    socket.emit('identify', email);
+
+    const waiting = document.getElementById('waiting');
+    const cardsContainer = document.getElementById('cardsContainer');
+    const cardsGrid = document.getElementById('cardsGrid');
+    const bgMusic = document.getElementById('bgMusic');
+
+    // try play music
+    function tryPlayMusic() {
+      bgMusic.volume = 0.25;
+      bgMusic.play().catch(()=> {
+        const btn = document.createElement('button');
+        btn.textContent = 'Activar música y audio';
+        btn.onclick = () => bgMusic.play();
+        document.querySelector('.player-area').appendChild(btn);
+      });
+    }
+    tryPlayMusic();
+
+    // show cards array
+  socket.on('cardsAssigned', (cards) => {
+  if (!cards || cards.length === 0) return; 
+  waiting.classList.add('hidden');
+  cardsContainer.classList.remove('hidden');
+  renderCards(cards);
+});
+
+    // also on initial load, server sends meanings
+    let meanings = {};
+    socket.on('meanings', m => meanings = m);
+
+    // when a number is drawn
+    socket.on('numberDrawn', (number) => {
+      announceNumber(number);
+      markNumberOnCards(number);
+    });
+
+    // notifications (terna/quintina/bingo)
+    socket.on('notification', (notif) => {
+      // show floating notification if it's about me
+      if (notif.email === email) {
+        const msgParts = [];
+        if (notif.terna) msgParts.push('TERNA');
+        if (notif.quintina) msgParts.push('QUINTINA');
+        if (notif.bingo) msgParts.push('BINGO');
+        showFloatingNotification(`Cartón #${notif.cardIndex+1}: ${msgParts.join(' / ')}`);
+      }
+    });
+
+    // render multiple cards
+    function renderCards(cards) {
+      cardsGrid.innerHTML = '';
+      cards.forEach((card, idx) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'card-wrap';
+        wrap.innerHTML = `<h4>Cartón ${idx+1}</h4>` + renderCardHtml(card, idx);
+        cardsGrid.appendChild(wrap);
+      });
+    }
+
+    function renderCardHtml(card, idx) {
+      const cols = ['B','I','N','G','O'];
+      let html = '<table class="bingo-table">';
+      html += '<thead><tr>' + cols.map(c=>`<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+      for (let r=0;r<5;r++){
+        html += '<tr>';
+        for (let c=0;c<5;c++){
+          const val = card[cols[c]][r];
+          html += `<td data-number="${val === 'FREE' ? '' : val}" id="cell-${idx}-${r}-${c}">${val}</td>`;
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      return html;
+    }
+
+    function markNumberOnCards(number) {
+      const tds = document.querySelectorAll(`td[data-number="${number}"]`);
+      tds.forEach(td => td.classList.add('marked'));
+    }
+
+    // voice announce
+    function announceNumber(number) {
+      if (bgMusic && !bgMusic.paused) bgMusic.volume = 0.08;
+      const meaning = meanings[number] || '';
+      const utter = new SpeechSynthesisUtterance(`Número ${number}. ${meaning}`);
+      utter.lang = 'es-AR';
+      utter.onend = () => { if (bgMusic) bgMusic.volume = 0.25; };
+      speechSynthesis.cancel();
+      speechSynthesis.speak(utter);
+    }
+
+    // float notif
+    function showFloatingNotification(text) {
+      const el = document.createElement('div');
+      el.className = 'floating-notif';
+      el.textContent = text;
+      document.body.appendChild(el);
+      setTimeout(()=> el.classList.add('visible'), 20);
+      setTimeout(()=> { el.classList.remove('visible'); setTimeout(()=>el.remove(),400); }, 6000);
+    }
+
+    // claim bingo
+    document.getElementById('btnClaim').onclick = () => {
+      socket.emit('playerClaimsBingo', email);
+      alert('Reclamaste Bingo — esperá confirmación del admin');
+    };
+
+    socket.on('bingoConfirmed', winner => {
+      if (winner === email) alert('¡FELICIDADES! Sos el ganador confirmado 🎉');
+      else alert('El admin confirmó ganador: ' + winner);
+    });
+
+  </script>
+</body>
+</html>
+

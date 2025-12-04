@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Bingo Casino - Login (vC)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="/style.css" />
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="casino-bg">
+  <div class="login-card">
+    <h1 class="logo">BINGO CASINO (vC)</h1>
+
+    <div class="section">
+      <h3>Administrador</h3>
+      <input id="adminPass" placeholder="Contraseña admin" />
+      <button id="btnAdmin">Entrar como Admin</button>
+    </div>
+
+    <div class="section">
+      <h3>Jugador</h3>
+      <input id="email" placeholder="tu@correo.com" />
+      <button id="btnPlayer">Entrar como Jugador</button>
+    </div>
+
+    <p class="small">Contraseña admin por defecto: <code>admin1234</code></p>
+  </div>
+
+  <script>
+    const socket = io();
+
+    document.getElementById('btnAdmin').onclick = () => {
+      const p = document.getElementById('adminPass').value;
+      socket.emit('loginAdmin', p);
+    };
+
+    socket.on('adminOk', () => { location.href = '/admin.html'; });
+    socket.on('adminFail', () => { alert('Contraseña incorrecta'); });
+
+    document.getElementById('btnPlayer').onclick = () => {
+      const email = document.getElementById('email').value.trim().toLowerCase();
+      if (!email) { alert('Ingresá tu correo'); return; }
+      sessionStorage.setItem('email', email);
+      socket.emit('playerJoinRequest', email);
+      location.href = '/player.html';
+    };
+  </script>
+</body>
+</html>

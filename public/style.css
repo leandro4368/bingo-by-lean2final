@@ -1,0 +1,155 @@
+/* style.css - versión C (casino) */
+body, html { height:100%; margin:0; font-family: 'Segoe UI', Roboto, Arial; color:#fff; }
+.casino-bg { background: radial-gradient(circle at 10% 10%, #2b0b3a, #0a0a0a); padding:20px; min-height:100vh; display:flex; align-items:flex-start; justify-content:center; }
+
+/* login */
+.login-card { background: rgba(0,0,0,0.55); padding:24px; border-radius:12px; width:360px; box-shadow: 0 10px 30px rgba(0,0,0,0.6); text-align:center; margin-top:40px; }
+.login-card input { width:100%; padding:10px; margin:8px 0; border-radius:6px; border: none; }
+.login-card button { width:100%; padding:10px; margin:6px 0; border-radius:6px; border:none; background:#c59f00; color:#111; font-weight:700; cursor:pointer; }
+.logo { letter-spacing:3px; color:#ffd966; margin:0 0 14px 0; }
+
+/* admin layout */
+.admin-container { width:95%; max-width:1200px; margin:20px auto; }
+.admin-container header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.admin-container .controls button { margin-left:8px; padding:8px 12px; border-radius:6px; border:none; background:#c59f00; color:#111; cursor:pointer; }
+main { display:flex; gap:12px; }
+.box { background: rgba(0,0,0,0.6); padding:12px; border-radius:8px; flex:1; min-height:200px; }
+.user-list { list-style:none; padding:0; margin:0; }
+.user-list li { display:block; padding:8px; border-bottom:1px solid rgba(255,255,255,0.03); margin-bottom:6px; }
+.small-btns { display:flex; gap:6px; margin-top:6px; }
+.small-btns button { padding:6px 8px; border-radius:6px; border:none; cursor:pointer; }
+.small-btns .accept { background:#2ecc71; color:#042; }
+.small-btns .reject, .small-btns .remove { background:#e74c3c; color:#fff; }
+.small-btns .assign, .small-btns .show { background:#3498db; color:#fff; }
+
+/* numbers grid */
+.numbers-grid { display:flex; flex-wrap:wrap; gap:6px; padding-top:8px; }
+.number-pill { display:inline-block; background:#333; color:#ffd966; padding:8px 12px; border-radius:12px; font-weight:700; }
+
+/* player card area */
+.player-area { width:98%; max-width:1100px; margin:20px auto; }
+.player-card-wrap { background: rgba(0,0,0,0.55); padding:12px; border-radius:8px; margin-bottom:10px; }
+.bingo-table { border-collapse:collapse; margin:12px 0; background:#111; color:#fff; }
+.bingo-table th, .bingo-table td { border:1px solid rgba(255,255,255,0.06); padding:8px 10px; text-align:center; width:56px; height:56px; }
+.bingo-table td.free { background: rgba(255,255,255,0.06); font-weight:700; }
+.bingo-table td.marked { background: #c59f00; color:#111; font-weight:900; }
+
+/* admin card display */
+.player-cards { margin-top:8px; padding-top:8px; }
+.player-cards .admin-card { margin-bottom:8px; }
+
+/* toast */
+.toast { position: fixed; right: 24px; bottom: 24px; background: rgba(0,0,0,0.8); color: #ffd966; padding:12px 16px; border-radius:8px; box-shadow: 0 6px 20px rgba(0,0,0,0.6); z-index:9999; }
+.hidden { display:none; }
+
+/* responsive */
+@media (max-width:900px) {
+  main { flex-direction:column; }
+  .bingo-table th, .bingo-table td { width:44px; height:44px; padding:6px; }
+}
+
+.assign-menu {
+  background: #111;
+  padding: 10px;
+  border: 2px solid gold;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 9999;
+}
+
+.assign-menu button {
+  background: #333;
+  color: gold;
+  border: 1px solid gold;
+  padding: 5px;
+  cursor: pointer;
+}
+.assign-menu button:hover {
+  background: gold;
+  color: #111;
+}
+
+.assign-menu {
+  position: absolute;
+  background: #222;
+  border: 1px solid #aaa;
+  padding: 10px;
+  z-index: 9999;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+.assign-menu p {
+  margin: 0 0 6px 0;
+  font-size: 14px;
+  color: #fff;
+}
+
+.assign-menu button {
+  margin: 3px;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+/* === FIJAR EL MENÚ DE ASIGNACIÓN === */
+.assign-menu {
+  position: absolute;
+  z-index: 9999;         /* SE VE SIEMPRE */
+  background: #222;
+  border: 2px solid #55ff55;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 0 15px #000;
+}
+
+.assign-menu button {
+  display: block;
+  width: 100%;
+  margin: 4px 0;
+  padding: 6px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Asegurar que el menú NO quede escondido */
+.box, .admin-container, body, html {
+  overflow: visible !important;
+}
+
+
+.btn-green {
+  background: #3cb43c;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-green:hover {
+  background: #2a8d2a;
+}
+
+.assign-menu {
+  position: absolute;
+  background: #222;
+  border: 1px solid #555;
+  padding: 10px;
+  border-radius: 6px;
+  z-index: 9999;
+}
+
+.assign-menu button {
+  margin: 4px;
+  padding: 5px 10px;
+  background: #28a745;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+.assign-menu button:hover {
+  opacity: 0.8;
+}

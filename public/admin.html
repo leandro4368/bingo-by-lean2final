@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Bingo Casino — Admin</title>
+  <link rel="stylesheet" href="/style.css" />
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="casino-bg">
+  <div class="admin-container">
+    <header>
+      <h1>BINGO CASINO — Panel Admin</h1>
+      <div class="controls">
+        <!-- Solo asignación individual: selector para elegir cuántos cartones asignar por clic -->
+        <label>Cartones por jugador:
+          <select id="assignCount">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6" selected>6</option>
+          </select>
+        </label>
+
+        <button id="btnStart">Iniciar partida</button>
+        <button id="btnDraw">Sacar número (auto)</button>
+        <button id="btnReset">Reiniciar números</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="box">
+        <h2>Solicitudes entrantes</h2>
+        <ul id="pendingList" class="user-list"></ul>
+      </section>
+
+      <section class="box">
+        <h2>Jugadores (click para ver cartones)</h2>
+        <ul id="playersList" class="user-list"></ul>
+      </section>
+
+      <section class="box">
+        <h2>Números salidos</h2>
+        <div id="numbersOut" class="numbers-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal para ver cartones -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-content">
+      <button id="modalClose">Cerrar</button>
+      <h3 id="modalTitle"></h3>
+      <div id="modalCards"></div>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+
+    const pendingList = document.getElementById('pendingList');
+    const playersList = document.getElementById('playersList');
+    const numbersOut = document.getElementById('numbersOut');
+    const assignCount = document.getElementById('assignCount');
+
+    // Botones principales
+    document.getElementById('btnStart').onclick = () => socket.emit('adminStartGame');
+    document.getElementById('btnDraw').onclick = () => socket.emit('adminDrawNumber');
+    document.getElementById('btnReset').onclick = () => socket.emit('adminResetNumbers');
+
+    // Pendientes
+    socket.on('pendingList', list => {
+      pendingList.innerHTML = '';
+      (list || []).forEach(email => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span>${email}</span>
+          <div class="small-btns">
+            <button class="accept" data-email="${email}">Aceptar</button>
+            <button class="reject" data-email="${email}">Rechazar</button>
+          </div>`;
+        pendingList.appendChild(li);
+      });
+
+      // Delegación handlers
+      pendingList.querySelectorAll('.accept').forEach(btn =>
+        btn.onclick = e => socket.emit('adminAccept', e.target.dataset.email)
+      );
+      pendingList.querySelectorAll('.reject').forEach(btn =>
+        btn.onclick = e => socket.emit('adminReject', e.target.dataset.email)
+      );
+    });
+
+    // Jugadores
+    socket.on('playersList', list => {
+      playersList.innerHTML = '';
+      (list || []).forEach(p => {
+        const cardCount = p.cards ? p.cards.length : 0;
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <span class="player-line">${p.email} ${p.connected ? '(online)' : '(offline)'} - ${cardCount} cartón(es)</span>
+          <div class="small-btns">
+          <button class="assignOne btn-green" data-email="${p.email}">Asignar</button>
+
+            <button class="remove" data-email="${p.email}">Eliminar</button>
+            <button class="view" data-email="${p.email}">Ver</button>
+          </div>`;
+        playersList.appendChild(li);
+      });
+
+  playersList.querySelectorAll('.assignOne').forEach(btn =>
+  btn.onclick = e => {
+    const email = e.target.dataset.email;
+
+    // Crear menú emergente simple
+    const menu = document.createElement("div");
+    menu.className = "assign-menu";
+
+    menu.innerHTML = `
+      <p>Asignar cartones a <b>${email}</b>:</p>
+      <button data-n="1">1</button>
+      <button data-n="2">2</button>
+      <button data-n="3">3</button>
+      <button data-n="4">4</button>
+      <button data-n="5">5</button>
+      <button data-n="6">6</button>
+    `;
+
+    // posicionar el menú debajo del botón
+    const rect = e.target.getBoundingClientRect();
+    menu.style.position = "absolute";
+    menu.style.top = (rect.bottom + window.scrollY) + "px";
+    menu.style.left = (rect.left + window.scrollX) + "px";
+
+    document.body.appendChild(menu);
+
+    // cerrar si hago click fuera
+    const close = () => {
+      document.body.removeChild(menu);
+      document.removeEventListener("click", close);
+    };
+    setTimeout(() => {
+      document.addEventListener("click", close);
+    }, 10);
+
+    // elegir cantidad
+    menu.querySelectorAll("button").forEach(b =>
+      b.onclick = ev => {
+        ev.stopPropagation();
+        const count = Number(ev.target.dataset.n);
+        socket.emit("adminAssignOne", { email, count });
+        close();
+      }
+    );
+  }
+);
+
+
+
+      playersList.querySelectorAll('.remove').forEach(btn =>
+        btn.onclick = e => socket.emit('adminRemove', e.target.dataset.email)
+      );
+
+      playersList.querySelectorAll('.view').forEach(btn =>
+        btn.onclick = e => {
+          const email = e.target.dataset.email;
+          // pedimos estado y mostramos el modal con la info actualizada
+          socket.emit('adminRequestState');
+          socket.once('playersList', list2 => {
+            const player = (list2 || []).find(u => u.email === email);
+            showModalForPlayer(player);
+          });
+        }
+      );
+    });
+
+    // Números salidos
+    socket.on('numbersState', numbers => {
+      numbersOut.innerHTML = '';
+      (numbers || []).forEach(n => {
+        const span = document.createElement('span');
+        span.className = 'number-pill';
+        span.textContent = n;
+        numbersOut.appendChild(span);
+      });
+    });
+
+    // Notificaciones tipo terna/quintina/bingo
+    socket.on('notification', notif => {
+      const parts = [];
+      if (notif.terna) parts.push('TERNA');
+      if (notif.quintina) parts.push('QUINTINA');
+      if (notif.bingo) parts.push('BINGO');
+      showFloatingNotification(`${notif.email} · Cartón #${notif.cardIndex+1} → ${parts.join(' / ')}`);
+    });
+
+    socket.on('bingoClaimed', email => showFloatingNotification(`Reclamó BINGO: ${email}`));
+    socket.on('bingoConfirmed', email => showFloatingNotification(`BINGO confirmado: ${email}`));
+
+    // Modal
+    const modal = document.getElementById('modal');
+    const modalClose = document.getElementById('modalClose');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalCards = document.getElementById('modalCards');
+    modalClose.onclick = () => modal.classList.add('hidden');
+
+    function showModalForPlayer(player) {
+      if (!player) return alert("Jugador no encontrado");
+      modalTitle.textContent = `Cartones de ${player.email}`;
+      modalCards.innerHTML = '';
+      const cards = player.cards || [];
+      if (cards.length === 0) modalCards.innerHTML = '<p>Sin cartones asignados</p>';
+      cards.forEach((card, idx) => {
+        const div = document.createElement('div');
+        div.className = 'player-card-wrap';
+        div.innerHTML = `<h4>Cartón ${idx+1}</h4>` + renderCardSmall(card);
+        modalCards.appendChild(div);
+      });
+      modal.classList.remove('hidden');
+    }
+
+    function renderCardSmall(card) {
+      const cols = ['B','I','N','G','O'];
+      let html = '<table class="bingo-table small">';
+      html += '<thead><tr>' + cols.map(c => `<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+      for (let r=0;r<5;r++){
+        html += '<tr>';
+        for (let c=0;c<5;c++){
+          const v = card[cols[c]][r];
+          html += `<td>${v}</td>`;
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      return html;
+    }
+
+    // notificaciones flotantes
+    function showFloatingNotification(text) {
+      const el = document.createElement('div');
+      el.className = 'floating-notif';
+      el.textContent = text;
+      document.body.appendChild(el);
+      setTimeout(()=> el.classList.add('visible'), 20);
+      setTimeout(()=> { el.classList.remove('visible'); setTimeout(()=>el.remove(),400); }, 6000);
+    }
+
+    // pedir estado inicial
+    socket.emit('adminRequestState');
+  </script>
+</body>
+</html>
