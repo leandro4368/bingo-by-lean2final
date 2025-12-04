@@ -234,13 +234,31 @@ io.on("connection", socket => {
   });
 
   // jugador pide entrar
-  socket.on("playerJoinRequest", email => {
-    email=email.toLowerCase();
-    db.run("INSERT OR REPLACE INTO pending(email,ts) VALUES(?,?)",
+  // un jugador quiere entrar
+socket.on("playerJoinRequest", email => {
+  email = email.toLowerCase();
+
+  // Ver si ya existe como jugador
+  db.get("SELECT email FROM users WHERE email=?", [email], (err, row) => {
+    if (row) {
+      // 🟢 YA ESTÁ REGISTRADO — reconecta sin perder cartones
+      io.to(socket.id).emit("playerAccepted", email);
+      broadcastState();
+      return;
+    }
+
+    // 🟢 Si no existe, lo agregamos como pendiente (sin reemplazar nadie)
+    db.run(
+      "INSERT OR IGNORE INTO pending(email, ts) VALUES(?, ?)",
       [email, Date.now()],
-      () => broadcastState()
+      () => {
+        io.emit("pendingListUpdated", email);
+        broadcastState();
+      }
     );
   });
+});
+
 
   // admin acepta
   socket.on("adminAccept", email => {
